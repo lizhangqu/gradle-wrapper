@@ -34,7 +34,7 @@ public class WrapperExecutor {
     private final Properties localProperties;
     private final File propertiesFile;
     private final File localPropertiesFile;
-    private final String gradleVersion;
+    private String gradleVersion;
     private final WrapperConfiguration config = new WrapperConfiguration();
 
     public static WrapperExecutor forProjectDirectory(File projectDir) {
@@ -60,11 +60,14 @@ public class WrapperExecutor {
         this.localProperties = localProperties;
         this.propertiesFile = propertiesFile;
         this.localPropertiesFile = localPropertiesFile;
-        this.gradleVersion = gradleVersion;
         if (propertiesFile.exists()) {
             try {
                 loadProperties(propertiesFile, properties);
                 loadProperties(localPropertiesFile, localProperties);
+                this.gradleVersion = getProperty("gradleVersion", null, false);
+                if (gradleVersion != null) {
+                    this.gradleVersion = gradleVersion;
+                }
                 config.setDistribution(prepareDistributionUri());
                 config.setDistributionBase(getProperty(DISTRIBUTION_BASE_PROPERTY, config.getDistributionBase()));
                 config.setDistributionPath(getProperty(DISTRIBUTION_PATH_PROPERTY, config.getDistributionPath()));
