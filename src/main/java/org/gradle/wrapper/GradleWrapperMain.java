@@ -38,6 +38,7 @@ public class GradleWrapperMain {
     public static void main(String[] args) throws Exception {
         File wrapperJar = wrapperJar();
         File propertiesFile = wrapperProperties(wrapperJar);
+        File localPropertiesFile = wrapperLocalProperties(wrapperJar);
         File rootDir = rootDir(wrapperJar);
 
         CommandLineParser parser = new CommandLineParser();
@@ -59,7 +60,7 @@ public class GradleWrapperMain {
 
         Logger logger = logger(options);
 
-        WrapperExecutor wrapperExecutor = WrapperExecutor.forWrapperPropertiesFile(propertiesFile);
+        WrapperExecutor wrapperExecutor = WrapperExecutor.forWrapperPropertiesFile(propertiesFile, localPropertiesFile);
         wrapperExecutor.execute(
                 args,
                 new Install(logger, new Download(logger, "gradlew", UNKNOWN_VERSION), new PathAssembler(gradleUserHome)),
@@ -77,6 +78,10 @@ public class GradleWrapperMain {
 
     private static File wrapperProperties(File wrapperJar) {
         return new File(wrapperJar.getParent(), wrapperJar.getName().replaceFirst("\\.jar$", ".properties"));
+    }
+
+    private static File wrapperLocalProperties(File wrapperJar) {
+        return new File(wrapperJar.getParent(), wrapperJar.getName().replaceFirst("\\.jar$", "-local.properties"));
     }
 
     private static File wrapperJar() {

@@ -31,26 +31,38 @@ public class WrapperExecutor {
     public static final String ZIP_STORE_BASE_PROPERTY = "zipStoreBase";
     public static final String ZIP_STORE_PATH_PROPERTY = "zipStorePath";
     private final Properties properties;
+    private final Properties localProperties;
     private final File propertiesFile;
+    private final File localPropertiesFile;
     private final WrapperConfiguration config = new WrapperConfiguration();
 
     public static WrapperExecutor forProjectDirectory(File projectDir) {
-        return new WrapperExecutor(new File(projectDir, "gradle/wrapper/gradle-wrapper.properties"), new Properties());
+        return new WrapperExecutor(new File(projectDir, "gradle/wrapper/gradle-wrapper.properties"), null, new Properties(), new Properties());
     }
 
     public static WrapperExecutor forWrapperPropertiesFile(File propertiesFile) {
         if (!propertiesFile.exists()) {
             throw new RuntimeException(String.format("Wrapper properties file '%s' does not exist.", propertiesFile));
         }
-        return new WrapperExecutor(propertiesFile, new Properties());
+        return new WrapperExecutor(propertiesFile, null, new Properties(), new Properties());
     }
 
-    WrapperExecutor(File propertiesFile, Properties properties) {
+    public static WrapperExecutor forWrapperPropertiesFile(File propertiesFile, File localPropertiesFile) {
+        if (!propertiesFile.exists()) {
+            throw new RuntimeException(String.format("Wrapper properties file '%s' does not exist.", propertiesFile));
+        }
+        return new WrapperExecutor(propertiesFile, (localPropertiesFile != null && localPropertiesFile.exists() && localPropertiesFile.isFile()) ? localPropertiesFile : null, new Properties(), new Properties());
+    }
+
+    WrapperExecutor(File propertiesFile, File localPropertiesFile, Properties properties, Properties localProperties) {
         this.properties = properties;
+        this.localProperties = localProperties;
         this.propertiesFile = propertiesFile;
+        this.localPropertiesFile = localPropertiesFile;
         if (propertiesFile.exists()) {
             try {
                 loadProperties(propertiesFile, properties);
+                loadProperties(localPropertiesFile, localProperties);
                 config.setDistribution(prepareDistributionUri());
                 config.setDistributionBase(getProperty(DISTRIBUTION_BASE_PROPERTY, config.getDistributionBase()));
                 config.setDistributionPath(getProperty(DISTRIBUTION_PATH_PROPERTY, config.getDistributionPath()));
@@ -81,11 +93,13 @@ public class WrapperExecutor {
     }
 
     private static void loadProperties(File propertiesFile, Properties properties) throws IOException {
-        InputStream inStream = new FileInputStream(propertiesFile);
-        try {
-            properties.load(inStream);
-        } finally {
-            inStream.close();
+        if (propertiesFile != null && propertiesFile.exists()) {
+            InputStream inStream = new FileInputStream(propertiesFile);
+            try {
+                properties.load(inStream);
+            } finally {
+                inStream.close();
+            }
         }
     }
 
@@ -117,6 +131,12 @@ public class WrapperExecutor {
     }
 
     private String getProperty(String propertyName, String defaultValue, boolean required) {
+        if (localProperties != null && localProperties.containsKey(propertyName)) {
+            String localValue = localProperties.getProperty(propertyName);
+            if (localValue != null && localValue.length() > 0) {
+                return localValue;
+            }
+        }
         String value = properties.getProperty(propertyName);
         if (value != null) {
             return value;
