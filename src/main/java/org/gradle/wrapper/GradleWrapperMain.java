@@ -102,7 +102,7 @@ public class GradleWrapperMain {
     }
 
     private static File wrapperLocalProperties(File wrapperJar) {
-        return new File(wrapperJar.getParent(), wrapperJar.getName().replaceFirst("\\.jar$", "-local.properties"));
+        return new File(wrapperJar.getParentFile().getParentFile(), "local.properties");
     }
 
     private static File wrapperJar() {
