@@ -77,7 +77,7 @@ public class GradleWrapperMain {
                 String next = iterator.next();
                 if (next != null) {
                     next = next.trim();
-                    if (next.startsWith("--gradle-version")) {
+                    if (next.startsWith("--gradle-version=") && !extraArguments.contains("wrapper")) {
                         iterator.remove();
                         return next.replace("--gradle-version=", "");
                     }
