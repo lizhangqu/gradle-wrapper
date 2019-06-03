@@ -34,31 +34,33 @@ public class WrapperExecutor {
     private final Properties localProperties;
     private final File propertiesFile;
     private final File localPropertiesFile;
+    private final String gradleVersion;
     private final WrapperConfiguration config = new WrapperConfiguration();
 
     public static WrapperExecutor forProjectDirectory(File projectDir) {
-        return new WrapperExecutor(new File(projectDir, "gradle/wrapper/gradle-wrapper.properties"), null, new Properties(), new Properties());
+        return new WrapperExecutor(new File(projectDir, "gradle/wrapper/gradle-wrapper.properties"), null, new Properties(), new Properties(), null);
     }
 
     public static WrapperExecutor forWrapperPropertiesFile(File propertiesFile) {
         if (!propertiesFile.exists()) {
             throw new RuntimeException(String.format("Wrapper properties file '%s' does not exist.", propertiesFile));
         }
-        return new WrapperExecutor(propertiesFile, null, new Properties(), new Properties());
+        return new WrapperExecutor(propertiesFile, null, new Properties(), new Properties(), null);
     }
 
-    public static WrapperExecutor forWrapperPropertiesFile(File propertiesFile, File localPropertiesFile) {
+    public static WrapperExecutor forWrapperPropertiesFile(File propertiesFile, File localPropertiesFile, String gradleVersion) {
         if (!propertiesFile.exists()) {
             throw new RuntimeException(String.format("Wrapper properties file '%s' does not exist.", propertiesFile));
         }
-        return new WrapperExecutor(propertiesFile, (localPropertiesFile != null && localPropertiesFile.exists() && localPropertiesFile.isFile()) ? localPropertiesFile : null, new Properties(), new Properties());
+        return new WrapperExecutor(propertiesFile, (localPropertiesFile != null && localPropertiesFile.exists() && localPropertiesFile.isFile()) ? localPropertiesFile : null, new Properties(), new Properties(), gradleVersion);
     }
 
-    WrapperExecutor(File propertiesFile, File localPropertiesFile, Properties properties, Properties localProperties) {
+    WrapperExecutor(File propertiesFile, File localPropertiesFile, Properties properties, Properties localProperties, String gradleVersion) {
         this.properties = properties;
         this.localProperties = localProperties;
         this.propertiesFile = propertiesFile;
         this.localPropertiesFile = localPropertiesFile;
+        this.gradleVersion = gradleVersion;
         if (propertiesFile.exists()) {
             try {
                 loadProperties(propertiesFile, properties);
@@ -89,7 +91,13 @@ public class WrapperExecutor {
         if (properties.getProperty(DISTRIBUTION_URL_PROPERTY) == null) {
             reportMissingProperty(DISTRIBUTION_URL_PROPERTY);
         }
-        return new URI(getProperty(DISTRIBUTION_URL_PROPERTY));
+        String distributionUrl = getProperty(DISTRIBUTION_URL_PROPERTY);
+        int begin = distributionUrl.lastIndexOf("/");
+        int end = distributionUrl.lastIndexOf("-");
+        if (gradleVersion != null && gradleVersion.length() > 0 && begin > 0 && end > 0) {
+            distributionUrl = distributionUrl.substring(0, begin + 1) + "gradle-" + gradleVersion + distributionUrl.substring(end);
+        }
+        return new URI(distributionUrl);
     }
 
     private static void loadProperties(File propertiesFile, Properties properties) throws IOException {

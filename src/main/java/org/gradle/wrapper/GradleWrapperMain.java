@@ -24,8 +24,7 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Properties;
+import java.util.*;
 
 import static org.gradle.wrapper.Download.UNKNOWN_VERSION;
 
@@ -50,6 +49,7 @@ public class GradleWrapperMain {
         converter.configure(parser);
 
         ParsedCommandLine options = parser.parse(args);
+        String gradleVersionFromArgs = removeGradleVersion(args, options);
 
         Properties systemProperties = System.getProperties();
         systemProperties.putAll(converter.convert(options, new HashMap<String, String>()));
@@ -60,12 +60,44 @@ public class GradleWrapperMain {
 
         Logger logger = logger(options);
 
-        WrapperExecutor wrapperExecutor = WrapperExecutor.forWrapperPropertiesFile(propertiesFile, localPropertiesFile);
+        WrapperExecutor wrapperExecutor = WrapperExecutor.forWrapperPropertiesFile(propertiesFile, localPropertiesFile, gradleVersionFromArgs);
         wrapperExecutor.execute(
                 args,
                 new Install(logger, new Download(logger, "gradlew", UNKNOWN_VERSION), new PathAssembler(gradleUserHome)),
                 new BootstrapMainStarter());
     }
+
+    private static String removeGradleVersion(String[] args, ParsedCommandLine options) {
+        if (args != null && args.length > 0) {
+            for (int i = 0; i < args.length; i++) {
+                String arg = args[i];
+                if (arg != null) {
+                    arg = arg.trim();
+                    if (arg.startsWith("--gradle-version")) {
+                        args[i] = "";
+                    }
+                }
+            }
+        }
+
+        List<String> extraArguments = options.getExtraArguments();
+        if (extraArguments != null && extraArguments.size() > 0) {
+            Iterator<String> iterator = extraArguments.iterator();
+            while (iterator.hasNext()) {
+                String next = iterator.next();
+                if (next != null) {
+                    next = next.trim();
+                    if (next.startsWith("--gradle-version")) {
+                        iterator.remove();
+                        return next.replace("--gradle-version=", "");
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
 
     private static void addSystemProperties(File gradleHome, File rootDir) {
         System.getProperties().putAll(SystemPropertiesHandler.getSystemProperties(new File(gradleHome, "gradle.properties")));
