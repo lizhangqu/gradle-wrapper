@@ -48,8 +48,11 @@ public class GradleWrapperMain {
         SystemPropertiesCommandLineConverter converter = new SystemPropertiesCommandLineConverter();
         converter.configure(parser);
 
-        ParsedCommandLine options = parser.parse(args);
-        String gradleVersionFromArgs = removeGradleVersion(args, options);
+        List<String> argsList = new ArrayList<>(Arrays.asList(args));
+        String gradleVersionFromArgs = removeGradleVersion(argsList);
+
+        String[] filteredArgs = argsList.toArray(new String[0]);
+        ParsedCommandLine options = parser.parse(filteredArgs);
 
         Properties systemProperties = System.getProperties();
         systemProperties.putAll(converter.convert(options, new HashMap<String, String>()));
@@ -62,25 +65,12 @@ public class GradleWrapperMain {
 
         WrapperExecutor wrapperExecutor = WrapperExecutor.forWrapperPropertiesFile(propertiesFile, localPropertiesFile, gradleVersionFromArgs);
         wrapperExecutor.execute(
-                args,
+                filteredArgs,
                 new Install(logger, new Download(logger, "gradlew", UNKNOWN_VERSION), new PathAssembler(gradleUserHome)),
                 new BootstrapMainStarter());
     }
 
-    private static String removeGradleVersion(String[] args, ParsedCommandLine options) {
-        if (args != null && args.length > 0) {
-            for (int i = 0; i < args.length; i++) {
-                String arg = args[i];
-                if (arg != null) {
-                    arg = arg.trim();
-                    if (arg.startsWith("--gradle-version")) {
-                        args[i] = "";
-                    }
-                }
-            }
-        }
-
-        List<String> extraArguments = options.getExtraArguments();
+    private static String removeGradleVersion(List<String> extraArguments) {
         if (extraArguments != null && extraArguments.size() > 0) {
             Iterator<String> iterator = extraArguments.iterator();
             while (iterator.hasNext()) {
@@ -94,7 +84,6 @@ public class GradleWrapperMain {
                 }
             }
         }
-
         return null;
     }
 
