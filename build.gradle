@@ -1,0 +1,30 @@
+apply plugin: 'java-library'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+    }
+}
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+dependencies {
+
+}
+
+jar {
+    manifest {
+        attributes(
+                "Implementation-Title": "Gradle Wrapper",
+                "Implementation-Version": "5.4.1",
+        )
+    }
+}
